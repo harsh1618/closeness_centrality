@@ -15,6 +15,7 @@ from copy import copy
 from random import randint
 import sys
 import matplotlib.pyplot as plt
+from time import time
 
 sys.setrecursionlimit(100000)
 
@@ -36,7 +37,7 @@ DIRECTED = False
 RANDOM_GRAPH = True
 
 if RANDOM_GRAPH:
-    random_graph = nx.fast_gnp_random_graph(10000, 0.0002)
+    random_graph = nx.fast_gnp_random_graph(30000, 0.00008)
     # select largest connected component
     connected_components = list(nx.connected_component_subgraphs(random_graph))
     connected_components.sort(key = len, reverse = True)
@@ -63,6 +64,7 @@ phi = {} # min of upper bound on centrality - threshold for each vertex
 pruned = {}
 upper_bounds = {}
 lower_bounds = {}
+schedule = nx.DiGraph()
 
 # wrapper functions to implement max heap of (centrality, vertex)
 def heappush(i):
@@ -89,10 +91,10 @@ def process(vertex, s, delta):
     heappush((centrality, vertex))
 
     # prune if upper bound of centrality is less than k'th largest
-    if len(A) >= k:
-        prune_threshold = nlargest(k)[-1][0]
-        prune(vertex, s, prune_threshold, delta)
-    if vertex in pruned: return
+    #if len(A) >= k:
+    #    prune_threshold = nlargest(k)[-1][0]
+    #    prune(vertex, s, prune_threshold, delta)
+    #if vertex in pruned: return
 
     for v in schedule[vertex]:
         if v in pruned: continue
@@ -241,15 +243,21 @@ def getSchedule(G):
     return start_vertices, schedule
 
 if brute_force:
+    start = time()
+    i = 0
     for vertex in G.nodes():
+        i += 1
+        if i%1000 == 0: print i
         L = {}
         s, delta = PFS(vertex)
         centrality = float((len(L) - 1)**2) / (s * (V - 1))
         heappush((centrality, vertex))
+    print "Time taken:", int(time() - start)
 
 else:
     start_vertices, schedule = getSchedule(G) # schedule is a networkx graph, start_vertices is a list
 
+    start = time()
     for start_vertex in start_vertices:
         L = {}
         phi = {}
@@ -258,6 +266,7 @@ else:
         lower_bounds = {}
         s, delta = PFS(start_vertex)
         process(start_vertex, s, delta)
+    print "Time taken:", int(time() - start)
 
 for i in nlargest(k):
     print i[1], i[0]
