@@ -206,7 +206,7 @@ def prune(vertex, s, threshold, delta):
             lower_bound = V
         else:
             upper_bound = upper_bounds.get(f, V)
-            lower_bound = lower_bounds.get(f, V)
+            lower_bound = lower_bounds.get(f, 0)
 
         s_prime = s - (V - lower_bound)*delta - l * upper_bound
         c_prime = float(upper_bound - 1)**2 / (V-1)*(s_prime)
