@@ -254,7 +254,8 @@ def getSchedule(G):
         tempG.add_node(-1)
 
         for s, d in tempG.edges():
-            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDest[s] - sumDest[d])**0.96)*(V**0.23))/((int(tempG[s][d]['weight'])**0.83)*(sumDest[s]**0.16))
+            if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
+            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDest[s] - sumDest[d])**0.96)*(V**0.23))/(((tempG[s][d]['weight'])**0.83)*(sumDest[s]**0.16))
 
         for i in xrange(0,V):
             tempG.add_edge(vertex[i],-1)
@@ -292,7 +293,8 @@ def getSchedule(G):
         tempG.add_node(-1)
 
         for s, d in tempG.edges():
-            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDist[s] - sumDist[d])**0.96)*(V**0.23))/((int(tempG[s][d]['weight'])**0.83)*(sumDist[s]**0.16))
+            if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
+            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDist[s] - sumDist[d])**0.96)*(V**0.23))/(((tempG[s][d]['weight'])**0.83)*(sumDist[s]**0.16))
 
         for v in tempG.nodes():
             if v==-1: continue
@@ -316,7 +318,7 @@ if brute_force:
         s, delta = PFS(vertex)
         centrality = float((len(L) - 1)**2) / (s * (V - 1))
         heappush((centrality, vertex))
-    print "Time taken:", int(time() - start)
+    finish = time()
 
 else:
     start_vertices, schedule = getSchedule(G) # schedule is a networkx DiGraph, start_vertices is a list
