@@ -2,6 +2,10 @@ import networkx as nx
 from math import sin, cos, sqrt, atan2, radians
 
 def geographicalDistance(lat1,lon1,lat2,lon2):
+    '''
+    Compute the distance along the earth's surface between
+    the two given coordinates.
+    '''
     R = 6373.0
     lat1 = radians(lat1)
     lon1 = radians(lon1)
@@ -15,7 +19,9 @@ def geographicalDistance(lat1,lon1,lat2,lon2):
     return distance
 
 def getGraph():
-
+    '''
+    Read the California road network graph from the data files.
+    '''
     G = nx.Graph()
     f=open("data/cal.cedge.txt")
     elist=[]

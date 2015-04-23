@@ -92,7 +92,7 @@ def process(vertex, s, delta):
 
     'vertex' is the vertex to be processed.
     s is the sum of distances to all vertices reachable from 'vertex'.
-    'delta' is the distance upper bound for the previous vertex.
+    'delta' is the distance upper bound for the vertex.
     '''
     centrality = float((len(L) - 1)**2) / (s * (V - 1))
     #centrality = float((len(filter(lambda x: L[x] is not None, L)) - 1)**2) / (s * (V - 1))
@@ -227,7 +227,7 @@ def prune(vertex, s, threshold, delta):
             if len(schedule[f]) == 0 and c_prime < threshold:
                 pruned[f] = True
 
-def getSchedule(G):
+def getSchedule(G, algo):
     '''
     Generate a schedule for processing the nodes so as to minimize
     total running time.
@@ -237,7 +237,7 @@ def getSchedule(G):
     schedule: a directed networkx graph in which presence of an edge
               (u, v) implies that v is processed after u.
     '''
-    if SCHEDULE == 0: # all source Dijkstra
+    if algo == 0: # all source Dijkstra
         tempG = G
         i = 0
         length=nx.all_pairs_dijkstra_path_length(G)
@@ -255,7 +255,9 @@ def getSchedule(G):
 
         for s, d in tempG.edges():
             if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
-            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDest[s] - sumDest[d])**0.96)*(V**0.23))/(((tempG[s][d]['weight'])**0.83)*(sumDest[s]**0.16))
+            tempG[s][d]['weight'] = (((tempG[s][d]['weight']*V + \
+                                    sumDest[s] - sumDest[d])**0.96)*(V**0.23)) / \
+                                   ((tempG[s][d]['weight']**0.83)*(sumDest[s]**0.16))
 
         for i in xrange(0,V):
             tempG.add_edge(vertex[i],-1)
@@ -263,7 +265,7 @@ def getSchedule(G):
         for i in xrange(0,V):
             tempG[-1][vertex[i]]['weight'] = V*(math.log(V))
 
-    elif SCHEDULE == 1: #BFS from centre
+    elif algo == 1: #BFS from centre
         sumLat = 0
         sumLon = 0
         for v in G.nodes():
@@ -272,7 +274,7 @@ def getSchedule(G):
         meanLat = sumLat / V
         meanLon = sumLon / V
         centre = 0
-        minDist = 10000000000
+        minDist = 1e10
         for v in G.nodes():
             dist = prep.geographicalDistance(G.node[v]['lat'], G.node[v]['lon'], meanLat, meanLon)
             if dist < minDist:
@@ -282,19 +284,21 @@ def getSchedule(G):
         start_vertices = [centre]
         return start_vertices, bt
 
-    elif SCHEDULE == 2: # geographical distance
+    elif algo == 2: # geographical distance
         tempG = G
         sumDist = [0] * V
         for s in G.nodes():
             for d in G.nodes():
-                if s==d: continue
-                sumDist[s] += prep.geographicalDistance(G.node[s]['lat'], G.node[s]['lon'], G.node[d]['lat'], G.node[d]['lon'])
+                sumDist[s] += prep.geographicalDistance(G.node[s]['lat'],
+                                G.node[s]['lon'], G.node[d]['lat'], G.node[d]['lon'])
         
         tempG.add_node(-1)
 
         for s, d in tempG.edges():
             if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
-            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDist[s] - sumDist[d])**0.96)*(V**0.23))/(((tempG[s][d]['weight'])**0.83)*(sumDist[s]**0.16))
+            tempG[s][d]['weight'] = (((tempG[s][d]['weight']*V + \
+                                    sumDist[s] - sumDist[d])**0.96)*(V**0.23)) / \
+                                   ((tempG[s][d]['weight']**0.83)*(sumDist[s]**0.16))
 
         for v in tempG.nodes():
             if v==-1: continue
@@ -321,7 +325,7 @@ if brute_force:
     finish = time()
 
 else:
-    start_vertices, schedule = getSchedule(G) # schedule is a networkx DiGraph, start_vertices is a list
+    start_vertices, schedule = getSchedule(G, SCHEDULE)
 
     start = time()
     for start_vertex in start_vertices:
