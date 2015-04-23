@@ -16,6 +16,7 @@ from random import randint
 import sys
 import matplotlib.pyplot as plt
 from time import time
+import prep
 
 sys.setrecursionlimit(100000)
 
@@ -34,9 +35,9 @@ else:
 
 SHOW_GRAPHS = False
 DIRECTED = False
-RANDOM_GRAPH = True
+GRAPH = 2 # 0: random, 1: manual, 2: California road
 
-if RANDOM_GRAPH:
+if GRAPH == 0:
     random_graph = nx.fast_gnp_random_graph(30000, 0.00008)
     # select largest connected component
     connected_components = list(nx.connected_component_subgraphs(random_graph))
@@ -45,10 +46,13 @@ if RANDOM_GRAPH:
     # add weights
     for source, dest in G.edges():
         G[source][dest]['weight'] = randint(1, 100)
-else:
+elif GRAPH == 1:
     G = nx.Graph()
     G.add_nodes_from([0,1,2,3,4])
     G.add_weighted_edges_from([(0,1,1), (0,2,1), (0, 3, 1), (0,4,1), (0,5,1)])
+else:
+    G = prep.getGraph()
+
 V = G.number_of_nodes()
 print "Number of vertices", V
 
