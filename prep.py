@@ -1,7 +1,7 @@
 import networkx as nx
 from math import sin, cos, sqrt, atan2, radians
 
-def dist(lat1,lon1,lat2,lon2):
+def geographicalDistance(lat1,lon1,lat2,lon2):
     R = 6373.0
     lat1 = radians(lat1)
     lon1 = radians(lon1)

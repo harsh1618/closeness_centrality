@@ -22,9 +22,10 @@ sys.setrecursionlimit(100000)
 
 k = 100
 
-if len(sys.argv) < 2:
-    print "Usage:", sys.argv[0], "<type>"
-    print "type should be 0 for brute force and 1 for delta-PFS method"
+if len(sys.argv) < 3:
+    print "Usage:", sys.argv[0], "<type> <schedule>"
+    print "type should be\n\t0 for brute force\n\t1 for delta-PFS method"
+    print "schedule should be\n\t0 for Dijkstra\n\t1 for BFS from centre\n\t2 for geographical distance"
     exit(1)
 
 if sys.argv[1] == '0':
@@ -36,6 +37,7 @@ else:
 SHOW_GRAPHS = False
 DIRECTED = False
 GRAPH = 2 # 0: random, 1: manual, 2: California road
+SCHEDULE = int(sys.argv[2]) # 0: Dijkstra, 1: BFS from centre, 2: Geographical distance approximation
 
 if GRAPH == 0:
     random_graph = nx.fast_gnp_random_graph(30000, 0.00008)
@@ -46,10 +48,12 @@ if GRAPH == 0:
     # add weights
     for source, dest in G.edges():
         G[source][dest]['weight'] = randint(1, 100)
+
 elif GRAPH == 1:
     G = nx.Graph()
     G.add_nodes_from([0,1,2,3,4])
     G.add_weighted_edges_from([(0,1,1), (0,2,1), (0, 3, 1), (0,4,1), (0,5,1)])
+
 else:
     G = prep.getGraph()
 
@@ -233,18 +237,74 @@ def getSchedule(G):
     schedule: a directed networkx graph in which presence of an edge
               (u, v) implies that v is processed after u.
     '''
-    mst = nx.minimum_spanning_tree(G)
-    schedule = nx.DiGraph()
-    for a,b in mst.edges():
-        schedule.add_edge(a, b)
-    if SHOW_GRAPHS:
-        nx.draw(schedule)
-        plt.show()
-    start_vertices = []
-    for v, in_degree in schedule.in_degree_iter():
-        if in_degree == 0:
-            start_vertices.append(v)
-    return start_vertices, schedule
+    if SCHEDULE == 0: # all source Dijkstra
+        tempG = G
+        i = 0
+        length=nx.all_pairs_dijkstra_path_length(G)
+
+        for ver in G.nodes():
+            vertex[i] = ver
+            i = i + 1 
+        for i in xrange(0,V):
+            temp = 0
+            for j in xrange(0,V):
+                temp = temp + length[vertex[i]][vertex[j]]
+            sumDest[vertex[i]] = int(temp) 
+        
+        tempG.add_node(-1)
+
+        for s, d in tempG.edges():
+            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDest[s] - sumDest[d])**0.96)*(V**0.23))/((int(tempG[s][d]['weight'])**0.83)*(sumDest[s]**0.16))
+
+        for i in xrange(0,V):
+            tempG.add_edge(vertex[i],-1)
+
+        for i in xrange(0,V):
+            tempG[-1][vertex[i]]['weight'] = V*(math.log(V))
+
+    elif SCHEDULE == 1: #BFS from centre
+        sumLat = 0
+        sumLon = 0
+        for v in G.nodes():
+            sumLat += G.node[v]['lat']
+            sumLon += G.node[v]['lon']
+        meanLat = sumLat / V
+        meanLon = sumLon / V
+        centre = 0
+        minDist = 10000000000
+        for v in G.nodes():
+            dist = prep.geographicalDistance(G.node[v]['lat'], G.node[v]['lon'], meanLat, meanLon)
+            if dist < minDist:
+                minDist = dist
+                centre = v
+        bt = nx.bfs_tree(G, centre)
+        start_vertices = [centre]
+        return start_vertices, bt
+
+    elif SCHEDULE == 2: # geographical distance
+        tempG = G
+        sumDist = [0] * V
+        for s in G.nodes():
+            for d in G.nodes():
+                if s==d: continue
+                sumDist[s] += prep.geographicalDistance(G.node[s]['lat'], G.node[s]['lon'], G.node[d]['lat'], G.node[d]['lon'])
+        
+        tempG.add_node(-1)
+
+        for s, d in tempG.edges():
+            tempG[s][d]['weight'] = (((int(tempG[s][d]['weight'])*V + sumDist[s] - sumDist[d])**0.96)*(V**0.23))/((int(tempG[s][d]['weight'])**0.83)*(sumDist[s]**0.16))
+
+        for v in tempG.nodes():
+            if v==-1: continue
+            tempG.add_edge(-1, v, {'weight': V*(math.log(V))})
+
+    mst = nx.minimum_spanning_tree(tempG)
+    bt = nx.bfs_tree(mst,-1)
+    start_vertices= []
+    for i in bt[-1]:
+        start_vertices.append(i)
+    bt.remove_node(-1)
+    return start_vertices, bt
 
 if brute_force:
     start = time()
@@ -259,7 +319,7 @@ if brute_force:
     print "Time taken:", int(time() - start)
 
 else:
-    start_vertices, schedule = getSchedule(G) # schedule is a networkx graph, start_vertices is a list
+    start_vertices, schedule = getSchedule(G) # schedule is a networkx DiGraph, start_vertices is a list
 
     start = time()
     for start_vertex in start_vertices:
@@ -270,8 +330,9 @@ else:
         lower_bounds = {}
         s, delta = PFS(start_vertex)
         process(start_vertex, s, delta)
-    print "Time taken:", int(time() - start)
+    finish = time()
 
 for i in nlargest(k):
     print i[1], i[0]
 
+print "Time taken:", int(finish - start)
