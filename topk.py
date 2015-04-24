@@ -16,6 +16,7 @@ from random import randint
 import sys
 import matplotlib.pyplot as plt
 from time import time
+import math
 import prep
 
 sys.setrecursionlimit(100000)
@@ -255,7 +256,7 @@ def getSchedule(G, algo):
 
         for s, d in tempG.edges():
             if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
-            tempG[s][d]['weight'] = (((tempG[s][d]['weight']*V + \
+            tempG[s][d]['weight'] = ((abs(tempG[s][d]['weight']*V + \
                                     sumDest[s] - sumDest[d])**0.96)*(V**0.23)) / \
                                    ((tempG[s][d]['weight']**0.83)*(sumDest[s]**0.16))
 
@@ -285,18 +286,20 @@ def getSchedule(G, algo):
         return start_vertices, bt
 
     elif algo == 2: # geographical distance
+        start = time()
         tempG = G
         sumDist = [0] * V
         for s in G.nodes():
             for d in G.nodes():
                 sumDist[s] += prep.geographicalDistance(G.node[s]['lat'],
                                 G.node[s]['lon'], G.node[d]['lat'], G.node[d]['lon'])
-        
+        finish = time()
+        print "Distance computation time", int(finish - start)
         tempG.add_node(-1)
 
         for s, d in tempG.edges():
             if tempG[s][d]['weight'] == 0: tempG[s][d]['weight'] = 0.016
-            tempG[s][d]['weight'] = (((tempG[s][d]['weight']*V + \
+            tempG[s][d]['weight'] = ((abs(tempG[s][d]['weight']*V + \
                                     sumDist[s] - sumDist[d])**0.96)*(V**0.23)) / \
                                    ((tempG[s][d]['weight']**0.83)*(sumDist[s]**0.16))
 
@@ -325,7 +328,9 @@ if brute_force:
     finish = time()
 
 else:
+    schedule_start = time()
     start_vertices, schedule = getSchedule(G, SCHEDULE)
+    print "Schedule generated in", (time() - schedule_start)
 
     start = time()
     for start_vertex in start_vertices:
